@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices
 from typing import Literal, List, Union, Optional
 
 
@@ -22,7 +22,7 @@ class Regular(BaseModel):
 
 
 class Synapse(BaseModel):
-    from_: str = Field(..., alias="from")
+    from_: str = Field(..., alias=AliasChoices('from', 'from_'))
     to: str
     weight: float
 
@@ -30,4 +30,5 @@ class Synapse(BaseModel):
 class SNPSystem(BaseModel):
     neurons: List[Union[Input, Output, Regular]]
     synapses: List[Synapse]
-    expected: Optional[List[object]]
+    expected: Optional[List[object]] = None
+    rule_dict: Optional[List[str]] = []

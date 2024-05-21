@@ -42,8 +42,8 @@ async def simulate_all(system: SNPSystem):
     print(matrixSNP.contents)
 
     return {
-        "states": matrixSNP.states.tolist(),
-        "configurations": matrixSNP.contents.tolist(),
+        "states": matrixSNP.states,
+        "configurations": matrixSNP.contents,
         "keys": matrixSNP.neuron_keys,
     }
 
@@ -56,7 +56,7 @@ async def simulate_all(system: SNPSystem):
     print(matrixSNP.content)
 
     return {
-        "contents": matrixSNP.content.tolist(),
+        "contents": matrixSNP.content,
     }
 
 
@@ -69,8 +69,8 @@ async def simulate_step(system: SNPSystem):
     print(matrixSNP.content)
     print(matrixSNP.halted)
     return {
-        "states": matrixSNP.state.tolist(),
-        "configurations": matrixSNP.content.tolist(),
+        "states": matrixSNP.state,
+        "configurations": matrixSNP.content,
         "keys": matrixSNP.neuron_keys,
         "halted": bool(matrixSNP.halted),
     }
@@ -135,6 +135,7 @@ async def next_guided(websocket: WebSocket, matrixSNP: MatrixSNPSystem, speed: i
                 "configurations": configs,
                 "halted": bool(matrixSNP.halted),
                 "tick": int(matrixSNP.cursor),
+                "edges": matrixSNP.graphs[-1],
             }
         )
     except Exception as e:
@@ -180,7 +181,8 @@ async def guided_mode(websocket: WebSocket):
                     await websocket.send_json(
                         {
                             "type": "history",
-                            "history": matrixSNP.decisions.tolist(),
+                            "history": matrixSNP.decisions,
+                            "labels": matrixSNP.neuron_labels,
                         }
                     )
                 elif cmd == "prev":
@@ -235,6 +237,7 @@ async def next_pseudorandom(
                 "configurations": configs,
                 "halted": bool(matrixSNP.halted),
                 "tick": int(matrixSNP.cursor),
+                "edges": matrixSNP.graphs[-1],
             }
         )
     except Exception as e:
@@ -278,7 +281,8 @@ async def pseudorandom_mode(websocket: WebSocket):
                     await websocket.send_json(
                         {
                             "type": "history",
-                            "history": matrixSNP.decisions.tolist(),
+                            "history": matrixSNP.decisions,
+                            "labels": matrixSNP.neuron_labels,
                         }
                     )
                 elif cmd == "prev":
