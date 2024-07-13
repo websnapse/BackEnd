@@ -1,4 +1,5 @@
 import re
+from app.errors import WebsnapseError
 
 
 def check_rule_validity(bound: str, spikes: int):
@@ -19,17 +20,23 @@ def check_rule_validity(bound: str, spikes: int):
     return validity is not None
 
 
+def validate_rule(rule: str):
+    pattern = r"^((?P<bound>.*)\/)?(?P<consumption_bound>[a-z](\^((?P<consumed_single>[^\D])|({(?P<consumed_multiple>[2-9]|[1-9][0-9]+)})))?)\s*(\\rightarrow|\\to)\s*(?P<production>([a-z]((\^((?P<produced_single>[^0,1,\D])|({(?P<produced_multiple>[2-9]|[1-9][0-9]+]*)})))?\s*;\s*(?P<delay>[0-9]|[1-9][0-9]*))|(?P<forgot>0)|(?P<lambda>\\lambda)))$"
+
+    result = re.match(pattern, rule)
+
+    if result is None:
+        raise WebsnapseError(f"Invalid rule definition ${rule}$")
+
+    return result
+
+
 def parse_rule(definition: str):
     """
     Performs regex matching on the rule definition to get
     the consumption, production and delay values
     """
-    pattern = r"^((?P<bound>.*)\/)?(?P<consumption_bound>[a-z](\^((?P<consumed_single>[^\D])|({(?P<consumed_multiple>[2-9]|[1-9][0-9]+)})))?)\s*\\to\s*(?P<production>([a-z]((\^((?P<produced_single>[^0,1,\D])|({(?P<produced_multiple>[2-9]|[1-9][0-9]+]*)})))?\s*;\s*(?P<delay>[0-9]|[1-9][0-9]*))|(?P<forgot>0)|(?P<lambda>\\lambda)))$"
-
-    result = re.match(pattern, definition)
-
-    if result is None:
-        return tuple((0, 0, 0, 0))
+    result = validate_rule(definition)
 
     forgetting = True if result.group("forgot") or result.group("lambda") else False
 

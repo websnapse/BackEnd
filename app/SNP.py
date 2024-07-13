@@ -1,5 +1,6 @@
 from app.models import SNPSystem
 from app.utils import check_rule_validity, parse_rule
+from app.errors import WebsnapseError
 import numpy as np
 import random
 from typing import Dict, Union
@@ -370,39 +371,42 @@ class MatrixSNPSystem:
         self.rules: Dict[str, Dict[str, Union[str, int]]] = {}
         self.neuron_rule_map: Dict[int, list[int]] = {}
         for neuron_idx, n in enumerate(self.neurons):
-            if n.type == "regular":
-                self.neuron_rule_map[neuron_idx] = []
-                for rule in n.rules:
-                    bound, consumption, production, delay = parse_rule(rule)
+            try:
+                if n.type == "regular":
+                    self.neuron_rule_map[neuron_idx] = []
+                    for rule in n.rules:
+                        bound, consumption, production, delay = parse_rule(rule)
+                        self.rules[f"r{self.rule_count}"] = {
+                            "bound": bound,
+                            "consumption": consumption,
+                            "production": production,
+                            "type": "spiking" if production > 0 else "forgetting",
+                            "delay": delay,
+                        }
+                        self.neuron_rule_map[neuron_idx].append(self.rule_count)
+                        self.rule_count += 1
+                elif n.type == "input":
+                    self.neuron_rule_map[neuron_idx] = []
                     self.rules[f"r{self.rule_count}"] = {
-                        "bound": bound,
-                        "consumption": consumption,
-                        "production": production,
-                        "type": "spiking" if production > 0 else "forgetting",
-                        "delay": delay,
+                        "bound": ".+",
+                        "consumption": 0,
+                        "production": 0,
+                        "delay": 0,
                     }
                     self.neuron_rule_map[neuron_idx].append(self.rule_count)
                     self.rule_count += 1
-            elif n.type == "input":
-                self.neuron_rule_map[neuron_idx] = []
-                self.rules[f"r{self.rule_count}"] = {
-                    "bound": ".+",
-                    "consumption": 0,
-                    "production": 0,
-                    "delay": 0,
-                }
-                self.neuron_rule_map[neuron_idx].append(self.rule_count)
-                self.rule_count += 1
-            elif n.type == "output":
-                self.neuron_rule_map[neuron_idx] = []
-                self.rules[f"r{self.rule_count}"] = {
-                    "bound": ".+",
-                    "consumption": 0,
-                    "production": 0,
-                    "delay": 0,
-                }
-                self.neuron_rule_map[neuron_idx].append(self.rule_count)
-                self.rule_count += 1
+                elif n.type == "output":
+                    self.neuron_rule_map[neuron_idx] = []
+                    self.rules[f"r{self.rule_count}"] = {
+                        "bound": ".+",
+                        "consumption": 0,
+                        "production": 0,
+                        "delay": 0,
+                    }
+                    self.neuron_rule_map[neuron_idx].append(self.rule_count)
+                    self.rule_count += 1
+            except WebsnapseError as e:
+                raise WebsnapseError(f"Error in neuron ${n.id}$: {e}")
 
         self.rule_keys = list(self.rules.keys())
 

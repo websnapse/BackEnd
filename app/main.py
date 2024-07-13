@@ -1,7 +1,8 @@
 import asyncio
-import time
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from app.models import SNPSystem
+from fastapi import FastAPI, WebSocket
+from app.errors import WebsnapseError
+from app.models import SNPSystem, Regular
+from app.utils import validate_rule
 from fastapi.middleware.cors import CORSMiddleware
 from app.SNP import MatrixSNPSystem
 
@@ -31,7 +32,6 @@ resume_event = asyncio.Event()
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
 
 @app.post("/simulate")
 async def simulate_all(system: SNPSystem):
@@ -142,6 +142,26 @@ async def next_guided(websocket: WebSocket, matrixSNP: MatrixSNPSystem, speed: i
     finally:
         if matrixSNP.halted:
             return
+
+
+@app.post("/validate")
+async def validate_neuron(neuron: Regular):
+    try:
+
+        for index, rule in enumerate(neuron.rules):
+            try:
+                validate_rule(rule)
+            except WebsnapseError as e:
+                return {
+                    "type": "error",
+                    "message": f"Invalid rule ${rule}$ found at position {index + 1}",
+                }
+        return {"type": "success", "message": "Neuron validated successfully"}
+    except WebsnapseError as e:
+        return {"type": "error", "message": e.message}
+    except Exception as e:
+        print(e)
+        return {"type": "error", "message": str(e)}
 
 
 @app.websocket("/ws/simulate/guided")
@@ -301,7 +321,7 @@ async def pseudorandom_mode(websocket: WebSocket):
                 await websocket.send_json(
                     {"type": "error", "message": "Command not recognized"}
                 )
-            except Exception as e:
-                break
+            except WebsnapseError as e:
+                await websocket.send_json({"type": "error", "message": e.message})
     except Exception as e:
-        pass
+        await websocket.send_json({"type": "error", "message": str(e)})
