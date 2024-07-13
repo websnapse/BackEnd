@@ -30,4 +30,4 @@ class Synapse(BaseModel):
 class SNPSystem(BaseModel):
     neurons: List[Union[Input, Output, Regular]]
     synapses: List[Synapse]
-    expected: Optional[List[object]]
+    expected: Optional[List[object]] = None
