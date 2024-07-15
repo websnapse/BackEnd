@@ -226,10 +226,10 @@ async def guided_mode(websocket: WebSocket):
                 await websocket.send_json(
                     {"type": "error", "message": "Command not recognized"}
                 )
-            except:
-                break
+            except WebsnapseError as e:
+                await websocket.send_json({"type": "error", "message": e.message})
     except Exception as e:
-        pass
+        await websocket.send_json({"type": "error", "message": str(e)})
 
 
 async def next_pseudorandom(
